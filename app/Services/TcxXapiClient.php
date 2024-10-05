@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\LoggedCall;
-use App\Models\TcxInstance;
+use App\Settings\TcxApiSettings;
 use Carbon\Carbon;
 use Illuminate\Http\Client\PendingRequest;
 
@@ -12,7 +12,7 @@ use Illuminate\Http\Client\PendingRequest;
  */
 readonly class TcxXapiClient implements TcxApiClientInterface
 {
-    public function __construct(private TcxInstance $instance)
+    public function __construct(private readonly TcxApiSettings $settings)
     {
 
     }
@@ -23,7 +23,7 @@ readonly class TcxXapiClient implements TcxApiClientInterface
      */
     public function status(): array
     {
-        return $this->api()->get('/SystemStatus')->throw()->json();
+        return $this->api()->get('/LicenseStatus')->throw()->json();
     }
 
     public function testConnection(): bool
@@ -180,28 +180,28 @@ readonly class TcxXapiClient implements TcxApiClientInterface
 
     public function getDidNumbers()
     {
-        return cache()->remember("tcx:did:{$this->instance->id}", now()->addHour(), function () {
+        return cache()->remember("tcx:did", now()->addHour(), function () {
             return $this->api()->get('/DidNumbers?$select=Number,RoutingRule&$expand=RoutingRule($select=RuleName)&$orderby=Number&$top=100')->throw()->json('value');
         });
     }
 
     public function getGroups()
     {
-        return cache()->remember("tcx:groups:{$this->instance->id}", now()->addHour(), function () {
+        return cache()->remember("tcx:groups", now()->addHour(), function () {
             return $this->api()->get('/Groups?$filter=not startsWith(Name, \'___FAVORITES___\')&$orderBy=Name&$select=Id,Name')->throw()->json('value');
         });
     }
 
     public function getGroup(int|string $id)
     {
-        return cache()->remember("tcx:group:{$this->instance->id}:{$id}", now()->addHour(), function () use ($id) {
+        return cache()->remember("tcx:group:{$id}", now()->addHour(), function () use ($id) {
             return $this->api()->get("/Groups({$id})?\$select=Id,Name")->throw()->json();
         });
     }
 
     public function getAgentGroupNames(int|string $number)
     {
-        return cache()->remember("tcx:user:group:{$this->instance->id}:{$number}", now()->addHour(), function () use ($number) {
+        return cache()->remember("tcx:user:group:{$number}", now()->addHour(), function () use ($number) {
             return collect($this->api()
                 ->get('/Users?$filter=Number eq \''.$number.'\'&$select=Id,Number,DisplayName&$expand=Groups($select=GroupId,Name;$filter=not startsWith(Name,\'___FAVORITES___\'))')
                 ->throw()
@@ -215,13 +215,13 @@ readonly class TcxXapiClient implements TcxApiClientInterface
      * @return string
      * @throws \Illuminate\Http\Client\RequestException
      */
-    private function accessToken(): string
+    public function accessToken(): string
     {
-        return cache()->remember("tcx:token:{$this->instance->id}", 3400, function () {
-            return \Http::baseUrl("https://{$this->instance->hostname}:{$this->instance->port}")
+        return cache()->remember("tcx:token", 3400, function () {
+            return \Http::baseUrl("https://{$this->settings->hostname}:{$this->settings->port}")
                 ->post('/webclient/api/Login/GetAccessToken', [
-                    'username' => $this->instance->username,
-                    'password' => $this->instance->password,
+                    'username' => $this->settings->username,
+                    'password' => $this->settings->password,
                 ])
                 ->throw()
                 ->json('Token.access_token');
@@ -239,7 +239,7 @@ readonly class TcxXapiClient implements TcxApiClientInterface
         return \Http::timeout(30)
             ->retry($retries, 300)
             ->withToken($this->accessToken())
-            ->baseUrl("https://{$this->instance->hostname}:{$this->instance->port}/xapi/v1");
+            ->baseUrl("https://{$this->settings->hostname}:{$this->settings->port}/xapi/v1");
     }
 
 }
