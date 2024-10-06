@@ -22,7 +22,7 @@ class GongApiClient
     {
         $agentId = $this->getUser($call->agent_email)['id'] ?? null;
 
-        if ($this->settings->enable_crm_data) {
+        if ($this->settings->enable_crm_data && $call->entity_id) {
             $crmData = [
                 [
                     'system' => 'Generic',
@@ -46,26 +46,32 @@ class GongApiClient
             'clientUniqueId' => $call->tcx_call_id,
             'primaryUser' => $agentId,
             'downloadMediaUrl' => $call->getTcxUrl(),
-            'context' => [
+            /*'context' => [
                 'system' => 'Generic',
-            ],
+            ],*/
+            'disposition' => match ($call->call_type) {
+                'Inbound', 'Outbound' => 'Answered',
+                'Notanswered', 'Missed' => 'No Answer',
+                default => 'Unknown',
+            },
             'direction' => ucfirst(strtolower($call->call_direction)),
-            'duration' => $call->call_duration,
+            'duration' => floatval($call->call_duration),
             'actualStart' => $call->call_start->toIso8601ZuluString(),
             'scheduledStart' => $call->call_start->toIso8601ZuluString(),
             'scheduledEnd' => $call->call_end->toIso8601ZuluString(),
             'parties' => [
                 [
                     'phoneNumber' => $call->caller_number,
+                    'name' => $call->caller_name ?? $call->caller_number,
                     'context' => $crmData,
                 ],
                 [
+                    'name' => $call->agent_name,
                     'userId' => $agentId,
                 ],
             ],
-            'disposition' => 'Completed',
-            'title' => $call->call_text,
-            'purpose' => null,
+            //'title' => $call->call_text,
+            //'purpose' => null,
         ];
 
         return $this->api()->post('/calls', $data)->throw()->json('callId');
@@ -85,6 +91,6 @@ class GongApiClient
         return \Http::timeout(30)
             ->retry(3, 100)
             ->withBasicAuth($this->settings->access_key, $this->settings->access_secret)
-            ->baseUrl('https://api.gong.io/v2');
+            ->baseUrl(trim($this->settings->api_base_url, '/').'/v2');
     }
 }

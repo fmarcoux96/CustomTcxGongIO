@@ -33,6 +33,22 @@ class ManageGongApi extends SettingsPage
                                 Forms\Components\Fieldset::make()
                                     ->columns(1)
                                     ->schema([
+                                        Forms\Components\Select::make('auth_type')
+                                            ->label(__('Authentication Type'))
+                                            ->native(false)
+                                            ->options([
+                                                'basic' => 'Basic',
+                                                'oauth2' => 'OAuth2',
+                                            ])
+                                            ->default('basic')
+                                            ->disableOptionWhen(fn ($value) => $value === 'oauth2')
+                                            ->selectablePlaceholder(false)
+                                            ->required(),
+                                        Forms\Components\TextInput::make('api_base_url')
+                                            ->label(__('API Base URL'))
+                                            ->required()
+                                            ->placeholder('https://')
+                                            ->url(),
                                         Forms\Components\TextInput::make('access_key')
                                             ->label(__('Access Key'))
                                             ->required()

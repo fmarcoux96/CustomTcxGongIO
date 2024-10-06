@@ -74,7 +74,7 @@ readonly class TcxXapiClient implements TcxApiClientInterface
      * @param LoggedCall $call
      * @return int|null
      */
-    public function findRecordingForCall(LoggedCall $call): ?int
+    public function findRecordingForCall(LoggedCall $call): void
     {
         $logs = $this->getCallLogs($call->call_start, $call->call_end);
 
@@ -91,17 +91,20 @@ readonly class TcxXapiClient implements TcxApiClientInterface
             }
         }
         if (!$entry) {
-            return null;
+            return;
         }
 
         $call->update(['tcx_call_id' => $entry['CallId']]);
 
         $callEntry = $this->searchCallLog($logs, $entry['CallId']);
         if (!$callEntry) {
-            return null;
+            return;
         }
 
-        return $callEntry['DstRecId'] ?? $callEntry['SrcRecId'] ?? null;
+        $call->update([
+            'tcx_recording_id' => $callEntry['DstRecId'] ?? $callEntry['SrcRecId'] ?? null,
+            'tcx_recording_filename' => $callEntry['RecordingUrl'] ?? null,
+        ]);
     }
 
     /**

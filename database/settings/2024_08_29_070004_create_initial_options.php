@@ -15,7 +15,7 @@ return new class extends SettingsMigration
         $this->migrator->add('tcx.connected', false);
         $this->migrator->add('tcx.status', []);
 
-        $this->migrator->addEncrypted('gong.enable_crm_data', false);
+        $this->migrator->add('gong.enable_crm_data', false);
         $this->migrator->addEncrypted('gong.access_key', '');
         $this->migrator->addEncrypted('gong.access_secret', '');
     }

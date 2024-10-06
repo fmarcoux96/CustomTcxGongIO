@@ -8,9 +8,13 @@ class GongApiSettings extends Settings
 {
     public bool $enable_crm_data;
 
+    public string $api_base_url;
+
     public string $access_key;
 
     public string $access_secret;
+
+    public string $auth_type;
 
     public static function group(): string
     {

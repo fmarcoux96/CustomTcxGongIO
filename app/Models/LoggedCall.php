@@ -37,14 +37,27 @@ class LoggedCall extends Model
         'gong_call_id',
     ];
 
+    protected $casts = [
+        'call_start' => 'datetime',
+        'call_end' => 'datetime',
+        'tcx_call_id' => 'integer',
+        'tcx_recording_id' => 'integer',
+        'zoho_call_id' => 'integer',
+        'gong_call_id' => 'integer',
+    ];
+
     public function prunable(): Builder
     {
         return static::query()
             ->where('created_at', '<=', now()->subMonth());
     }
 
-    public function getTcxUrl()
+    public function getTcxUrl(): ?string
     {
+        if (!$this->tcx_recording_id) {
+            return null;
+        }
+
         $settings = app(TcxApiSettings::class);
         $apiClient = app(TcxXapiClient::class);
 
