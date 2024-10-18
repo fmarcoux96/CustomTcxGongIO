@@ -22,6 +22,10 @@ class GongApiClient
     {
         $agentId = $this->getUser($call->agent_email)['id'] ?? null;
 
+        if (!$agentId && !empty($this->settings->fallback_user_id)) {
+            $agentId = $this->settings->fallback_user_id;
+        }
+
         if ($this->settings->enable_crm_data && $call->entity_id) {
             $crmData = [
                 [
