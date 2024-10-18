@@ -16,6 +16,19 @@ class GongApiSettings extends Settings
 
     public string $auth_type;
 
+    public ?string $fallback_user_id;
+
+    public function valid(): bool
+    {
+        try {
+            $api = new \App\Services\GongApiClient($this);
+
+            return $api->test();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
     public static function group(): string
     {
         return 'gong';

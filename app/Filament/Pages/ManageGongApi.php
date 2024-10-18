@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Services\GongApiClient;
 use App\Settings\GongApiSettings;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -23,14 +24,28 @@ class ManageGongApi extends SettingsPage
                     ->tabs([
                         Forms\Components\Tabs\Tab::make(__('General'))
                             ->schema([
-                                Forms\Components\Fieldset::make()
+                                Forms\Components\Fieldset::make(__('Options'))
                                     ->columns(1)
                                     ->schema([
                                         Forms\Components\Toggle::make('enable_crm_data')
                                             ->label(__('Enable CRM Data'))
                                             ->helperText(__('Enable CRM data to be sent with calls. Requires the CRM to be setup in Gong.')),
+                                        Forms\Components\Select::make('fallback_user_id')
+                                            ->label(__('Fallback User'))
+                                            ->helperText(__('If the user is not found in the CRM, use this user ID. If empty, calls without agent won\'t be uploaded.'))
+                                            ->disabled(fn (GongApiSettings $settings) => !$settings->valid())
+                                            ->native(false)
+                                            ->selectablePlaceholder()
+                                            ->options(function (Forms\Get $get, GongApiSettings $settings) {
+                                                if (!$settings->valid()) {
+                                                    return [];
+                                                }
+
+                                                $api = new GongApiClient($settings);
+                                                return $api->getUsers();
+                                            }),
                                     ]),
-                                Forms\Components\Fieldset::make()
+                                Forms\Components\Fieldset::make(__('Credentials'))
                                     ->columns(1)
                                     ->schema([
                                         Forms\Components\Select::make('auth_type')

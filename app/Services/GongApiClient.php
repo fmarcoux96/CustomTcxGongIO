@@ -100,6 +100,15 @@ class GongApiClient
         });
     }
 
+    public function getUsers()
+    {
+        return cache()->remember('gong:users', now()->addHour(), function () {
+            $users = $this->api()->get('/users')->throw()->json();
+
+            return collect($users['users'])->pluck('emailAddress', 'id');
+        });
+    }
+
     private function api()
     {
         return \Http::timeout(30)
