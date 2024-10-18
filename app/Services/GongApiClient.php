@@ -59,20 +59,34 @@ class GongApiClient
             'actualStart' => $call->call_start->toIso8601ZuluString(),
             'scheduledStart' => $call->call_start->toIso8601ZuluString(),
             'scheduledEnd' => $call->call_end->toIso8601ZuluString(),
-            'parties' => [
-                [
-                    'phoneNumber' => $call->caller_number,
-                    'name' => $call->caller_name ?? $call->caller_number,
-                    'context' => $crmData,
-                ],
-                [
-                    'name' => $call->agent_name,
-                    'userId' => $agentId,
-                ],
-            ],
+            'parties' => [],
             //'title' => $call->call_text,
             //'purpose' => null,
         ];
+
+        if ($crmData) {
+            $data['parties'][] = [
+                'phoneNumber' => $call->caller_number,
+                'name' => $call->caller_name ?? $call->caller_number,
+                'context' => $crmData,
+            ];
+        } else {
+            $data['parties'][] = [
+                'phoneNumber' => $call->caller_number,
+                'name' => $call->caller_name ?? $call->caller_number,
+            ];
+        }
+
+        if ($agentId) {
+            $data['parties'][] = [
+                'name' => $call->agent_name ?? $call->agent_extension,
+                'userId' => $agentId,
+            ];
+        } else {
+            $data['parties'][] = [
+                'name' => $call->agent_name ?? $call->agent_extension,
+            ];
+        }
 
         return $this->api()->post('/calls', $data)->throw()->json('callId');
     }
