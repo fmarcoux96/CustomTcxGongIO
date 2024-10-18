@@ -44,7 +44,6 @@ class GongApiClient
 
         $data = [
             'clientUniqueId' => $call->tcx_call_id,
-            'primaryUser' => $agentId,
             'downloadMediaUrl' => $call->getTcxUrl(),
             /*'context' => [
                 'system' => 'Generic',
@@ -78,6 +77,7 @@ class GongApiClient
         }
 
         if ($agentId) {
+            $data['primaryUser'] = $agentId;
             $data['parties'][] = [
                 'name' => $call->agent_name ?? $call->agent_extension,
                 'userId' => $agentId,
